@@ -13,12 +13,13 @@ function(vm_external_module)
 
   function(checkout_external_module repo_url tag)
     string(REPLACE "/" ";" repo_url_arr ${repo_url})
-    list(GET repo_url_arr -1 repo_dir)
+    list(GET repo_url_arr -1 repo_name)
     find_package(Git)
     if (NOT GIT_FOUND)
       message(FATAL_ERROR "Git not found")
     endif()
-    set(repo_dir "${CMAKE_BINARY_DIR}/external/${repo_dir}")
+    set(repo_dir "${CMAKE_BINARY_DIR}/external/${repo_name}")
+    set(bin_dir "${CMAKE_BINARY_DIR}/external_build/${repo_name}")
     if (NOT EXISTS ${repo_dir})
       execute_process(COMMAND 
         ${GIT_EXECUTABLE} clone "${repo_url}" --recursive ${repo_dir}
@@ -40,7 +41,7 @@ function(vm_external_module)
     execute_process(COMMAND 
       ${GIT_EXECUTABLE} checkout "${tag}" WORKING_DIRECTORY ${repo_dir}
     )
-    add_subdirectory(${repo_dir})
+    add_subdirectory(${repo_dir} ${bin_dir})
   endfunction()
 
   set(options OPTIONAL FAST)
