@@ -1,11 +1,18 @@
 function(vm_target_dependency a b access)
   add_dependencies(${a} ${b})
   get_target_property(include ${b} INTERFACE_INCLUDE_DIRECTORIES)
-  target_include_directories(${a} ${access} ${include})
+  if(include)
+	target_include_directories(${a} ${access} ${include})
+  endif()
   get_target_property(type ${b} TYPE)
   if(NOT "${type}" STREQUAL "INTERFACE_LIBRARY")
+	if("${type}" STREQUAL "STATIC_LIBRARY")
+	  target_link_libraries(${a} ${b})
+    endif()
     get_target_property(static ${b} LINK_LIBRARIES)
-    target_link_libraries(${a} ${static})
+    if(static)
+      target_link_libraries(${a} ${static})
+    endif()
   endif()
 endfunction() 
 
@@ -13,12 +20,13 @@ function(vm_external_module)
 
   function(checkout_external_module repo_url tag)
     string(REPLACE "/" ";" repo_url_arr ${repo_url})
-    list(GET repo_url_arr -1 repo_dir)
+    list(GET repo_url_arr -1 repo_name)
     find_package(Git)
     if (NOT GIT_FOUND)
       message(FATAL_ERROR "Git not found")
     endif()
-    set(repo_dir "${CMAKE_BINARY_DIR}/external/${repo_dir}")
+    set(repo_dir "${CMAKE_BINARY_DIR}/external/${repo_name}")
+    set(bin_dir "${CMAKE_BINARY_DIR}/external_build/${repo_name}")
     if (NOT EXISTS ${repo_dir})
       execute_process(COMMAND 
         ${GIT_EXECUTABLE} clone "${repo_url}" --recursive ${repo_dir}
@@ -29,10 +37,10 @@ function(vm_external_module)
         WORKING_DIRECTORY ${repo_dir}
         OUTPUT_VARIABLE remote_url
       )
-      string(STRIP ${remote_url} remote_url)
-      if(NOT "${remote_url}" STREQUAL "${repo_url}")
-        message(FATAL_ERROR "remote url in cache dir does not match")
-      endif()
+      string(STRIP "${remote_url}" remote_url)
+      #if(NOT "${remote_url}" STREQUAL "${repo_url}")
+      #  message(FATAL_ERROR "remote url in cache dir does not match, remote url is ${remote_url} but required url is ${repo_url}")
+      #endif()
     endif()
     execute_process(COMMAND 
       ${GIT_EXECUTABLE} pull --recurse-submodules WORKING_DIRECTORY ${repo_dir}
@@ -40,7 +48,7 @@ function(vm_external_module)
     execute_process(COMMAND 
       ${GIT_EXECUTABLE} checkout "${tag}" WORKING_DIRECTORY ${repo_dir}
     )
-    add_subdirectory(${repo_dir})
+    add_subdirectory(${repo_dir} ${bin_dir})
   endfunction()
 
   set(options OPTIONAL FAST)
