@@ -29,9 +29,9 @@ function(vm_external_module)
         WORKING_DIRECTORY ${repo_dir}
         OUTPUT_VARIABLE remote_url
       )
-      string(STRIP ${remote_url} remote_url)
+      string(STRIP "${remote_url}" remote_url)
       if(NOT "${remote_url}" STREQUAL "${repo_url}")
-        message(FATAL_ERROR "remote url in cache dir does not match")
+        message(FATAL_ERROR "remote url in cache dir does not match, remote url is ${remote_url} but required url is ${repo_url}")
       endif()
     endif()
     execute_process(COMMAND 
